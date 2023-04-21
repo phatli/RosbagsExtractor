@@ -1,0 +1,35 @@
+{
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "ros",
+  "workspaceFolder": "/RosbagsExtractor",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.linting.pylintEnabled": true,
+        "python.linting.enabled": false,
+        "python.linting.flake8Enabled": false,
+        "python.formatting.provider": "autopep8"
+      },
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "eamodio.gitlens",
+        "ms-toolsai.jupyter",
+        "christian-kohler.path-intellisense",
+        "sleistner.vscode-fileutils",
+        "exodiusstudios.comment-anchors",
+        "shd101wyy.markdown-preview-enhanced",
+        "elazarcoh.simply-view-image-for-python-debugging",
+        "yzhang.markdown-all-in-one",
+        "njpwerner.autodocstring",
+        "esbenp.prettier-vscode",
+        "donjayamanne.githistory",
+        "github.vscode-pull-request-github",
+        "gerrnperl.outline-map",
+        "ms-python.autopep8"
+      ]
+    }
+  }
+}
