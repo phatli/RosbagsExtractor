@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import rosbag
+import math
 import numpy as np
 import pandas as pd
 import argparse
@@ -51,6 +52,11 @@ if __name__ == '__main__':
                         help='Root folder to save extracted data')
     args = parser.parse_args()
 
+
+    is_polar_coord = False
+    if args.points_topic == "/radar_scan" and args.gps_topic == "/gps/fix":
+        is_polar_coord = True
+        
     # List of bag files to process
     bag_filenames = sorted(
         [file_name for pattern in args.bags for file_name in glob.glob(
@@ -58,7 +64,7 @@ if __name__ == '__main__':
     )
 
     for bag_filename in bag_filenames:
-        rosbag_name = bag_filename.split("/")[-1].split("_")[0]
+        rosbag_name = bag_filename.split("/")[-1].split("_")[0] if "_" in bag_filename.split("/")[-1] else bag_filename.split("/")[-1].split(".")[0]
         print(f'Processing { bag_filename}...')
 
         # Lists to store the extracted data
@@ -69,10 +75,18 @@ if __name__ == '__main__':
         bag = rosbag.Bag(bag_filename)
         for topic, msg, t in tqdm(bag.read_messages(), desc=f"==> Reading ROS bag", leave=True, position=0):
             if topic == args.points_topic:
-                points = np.array([[point.x, point.y, point.z]
-                                  for point in msg.points])
-                speed = np.array(msg.channels[0].values)
-                power = np.array(msg.channels[2].values)
+                if is_polar_coord:
+                    points = np.array([[target.range * math.cos(target.elevation) * math.cos(target.azimuth), 
+                                        target.range * math.cos(target.elevation) * math.sin(target.azimuth), 
+                                        target.range * math.sin(target.elevation)] 
+                                       for target in msg.targets])
+                    speed = np.array([target.velocity for target in msg.targets])
+                    power = np.array([target.power for target in msg.targets])
+                else:
+                    points = np.array([[point.x, point.y, point.z]
+                                    for point in msg.points])
+                    speed = np.array(msg.channels[0].values)
+                    power = np.array(msg.channels[2].values)
 
                 pcl_data.append((t.to_sec(), np.hstack(
                     (points, speed.reshape(-1, 1), power.reshape(-1, 1)))))
