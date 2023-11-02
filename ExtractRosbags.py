@@ -52,11 +52,10 @@ if __name__ == '__main__':
                         help='Root folder to save extracted data')
     args = parser.parse_args()
 
-
     is_polar_coord = False
     if args.points_topic == "/radar_scan" and args.gps_topic == "/gps/fix":
         is_polar_coord = True
-        
+
     # List of bag files to process
     bag_filenames = sorted(
         [file_name for pattern in args.bags for file_name in glob.glob(
@@ -64,38 +63,48 @@ if __name__ == '__main__':
     )
 
     for bag_filename in bag_filenames:
-        rosbag_name = bag_filename.split("/")[-1].split("_")[0] if "_" in bag_filename.split("/")[-1] else bag_filename.split("/")[-1].split(".")[0]
+        rosbag_name = "_".join(bag_filename.split("/")[-1].split("_")[:-2]) if "_" in bag_filename.split(
+            "/")[-1] else bag_filename.split("/")[-1].split(".")[0]
         print(f'Processing { bag_filename}...')
 
         # Lists to store the extracted data
         pcl_data = []
         gps_data = []
+        topics_to_read = [args.points_topic, args.gps_topic]
 
         # Open the bag file and extract the messages
-        bag = rosbag.Bag(bag_filename)
-        for topic, msg, t in tqdm(bag.read_messages(), desc=f"==> Reading ROS bag", leave=True, position=0):
-            if topic == args.points_topic:
-                if is_polar_coord:
-                    points = np.array([[target.range * math.cos(target.elevation) * math.cos(target.azimuth), 
-                                        target.range * math.cos(target.elevation) * math.sin(target.azimuth), 
-                                        target.range * math.sin(target.elevation)] 
-                                       for target in msg.targets])
-                    speed = np.array([target.velocity for target in msg.targets])
-                    power = np.array([target.power for target in msg.targets])
-                else:
-                    points = np.array([[point.x, point.y, point.z]
-                                    for point in msg.points])
-                    speed = np.array(msg.channels[0].values)
-                    power = np.array(msg.channels[2].values)
+        bag = rosbag.Bag(bag_filename, "r")
+        total_messages = bag.get_message_count(topic_filters=topics_to_read)
+        with tqdm(total=total_messages, desc=f"Extracting from {bag_filename}", unit="msg") as pbar:
+            for topic, msg, t in bag.read_messages(topics=topics_to_read):
+                if topic == args.points_topic:
+                    if is_polar_coord:
+                        points = np.array([[target.range * math.cos(target.elevation) * math.cos(target.azimuth),
+                                            target.range *
+                                            math.cos(target.elevation) *
+                                            math.sin(target.azimuth),
+                                            target.range * math.sin(target.elevation)]
+                                        for target in msg.targets])
+                        speed = np.array(
+                            [target.velocity for target in msg.targets])
+                        power = np.array([target.power for target in msg.targets])
+                    else:
+                        points = np.array([[point.x, point.y, point.z]
+                                        for point in msg.points])
+                        speed = np.array(msg.channels[0].values)
+                        power = np.array(msg.channels[2].values)
 
-                pcl_data.append((t.to_sec(), np.hstack(
-                    (points, speed.reshape(-1, 1), power.reshape(-1, 1)))))
+                    pcl_data.append((t.to_sec(), np.hstack(
+                        (points, speed.reshape(-1, 1), power.reshape(-1, 1)))))
 
-            elif topic == args.gps_topic:
-                gps_data.append(
-                    (t.to_sec(), np.array([msg.latitude, msg.longitude, msg.altitude])))
+                elif topic == args.gps_topic:
+                    gps_data.append(
+                        (t.to_sec(), np.array([msg.latitude, msg.longitude, msg.altitude])))
+                pbar.update(1)
 
         bag.close()
+
+        assert len(pcl_data) !=0 and len(gps_data) != 0, "No data extracted from the bag file."
 
         # Convert lists to numpy arrays for faster processing
         pcl_data = np.array(

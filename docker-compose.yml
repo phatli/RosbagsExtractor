@@ -10,6 +10,10 @@ services:
     volumes:
       - ".:/RosbagsExtractor"
       - "~/datasets/ros_dataset:/RosbagsExtractor/ros_datasets"
+      - "~/datasets:/datasets"
+
+    privileged: true
+    network_mode: host
 
     # Network
     # privileged: true

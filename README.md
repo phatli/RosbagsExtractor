@@ -4,7 +4,7 @@ This script is used to extract point cloud data from ROSBAG files and save them 
 
 ## Usage
 
-`python rosbag_pcl_extractor.py --points_topic <PCL_TOPIC> --gps_topic <GPS_TOPIC> --bags <BAG_FILENAMES> --save_folder <SAVE_FOLDER>`
+`python rosbag_pcl_extractor.py --points_topic <PCL_TOPIC> --gps_topic <GPS_TOPIC> --bags <BAG_FILENAME1> <BAG_FILENAME2> ... --save_folder <SAVE_FOLDER>`
 
 #### Arguments:
 
