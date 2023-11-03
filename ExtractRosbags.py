@@ -63,8 +63,13 @@ if __name__ == '__main__':
     )
 
     for bag_filename in bag_filenames:
-        rosbag_name = "_".join(bag_filename.split("/")[-1].split("_")[:-2]) if "_" in bag_filename.split(
-            "/")[-1] else bag_filename.split("/")[-1].split(".")[0]
+        filename = bag_filename.split("/")[-1]
+        if "_" in filename:
+            rosbag_name = "_".join(filename.split("_")[:-2])
+            date = "".join(filename.split("_")[-2].split("-")[:3])
+            rosbag_name = f"{date}_{rosbag_name}"
+        else:
+            rosbag_name = filename.split(".")[0]
         print(f'Processing { bag_filename}...')
 
         # Lists to store the extracted data
