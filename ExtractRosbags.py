@@ -169,6 +169,16 @@ if __name__ == '__main__':
         if args.image_topic:
             img_data = np.sort(img_data, order='timestamps')
 
+
+        csv_filename = join(args.save_folder, rosbag_name,
+                            f"{rosbag_name}_gps.csv")
+        if isfile(csv_filename):
+            existing_df = pd.read_csv(csv_filename)
+        else:
+            existing_df = pd.DataFrame(
+            columns=['timestamp', 'latitude', 'longitude', 'altitude'])
+        
+
         gps_df = pd.DataFrame(
             columns=['timestamp', 'latitude', 'longitude', 'altitude'])
 
@@ -186,9 +196,14 @@ if __name__ == '__main__':
 
             save_data_to_files(
                 pcl_msg, f'{timestamp}', args.save_folder, rosbag_name)
-        csv_filename = join(args.save_folder, rosbag_name,
-                            f"{rosbag_name}_gps.csv")
-        if isfile(csv_filename):
-            gps_df.to_csv(csv_filename, mode='a', header=False, index=False)
-        else:
-            gps_df.to_csv(csv_filename, header=True, index=False)
+
+        # Only keep rows with timestamps not in the existing DataFrame
+        new_rows = gps_df[~gps_df['timestamp'].astype(int).isin(existing_df['timestamp'].astype(int))]
+
+        # Concatenate new rows with the existing DataFrame
+        updated_df = pd.concat([existing_df, new_rows], ignore_index=True)
+
+
+        # Write updated DataFrame to CSV
+        updated_df.to_csv(csv_filename, header=True, index=False)
+        
