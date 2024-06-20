@@ -11,6 +11,28 @@ import glob
 from tqdm import tqdm
 import cv2
 
+def ask_time_compensation():
+    """Prompt the user to determine the specific time compensation needed for GPS data."""
+    print("Do you need to compensate the GPS timestamps to match UTC time?")
+    print("1: Yes, I will specify the compensation.")
+    print("2: No compensation needed.")
+    print("3: Use standard GPS-UTC offset (18 seconds).")
+    choice = input("Enter your choice (1, 2, or 3): ")
+
+    if choice == '1':
+        compensation = input("Enter the time compensation in seconds (positive or negative): ")
+        try:
+            return float(compensation)
+        except ValueError:
+            print("Invalid input. Please enter a numeric value.")
+            return ask_time_compensation()  # Recursively prompt if invalid
+    elif choice == '2':
+        return 0
+    elif choice == '3':
+        return 18
+    else:
+        print("Invalid input. Please enter 1, 2, or 3.")
+        return ask_time_compensation() 
 
 def find_topics(topics, data_types):
     """Find topics that could potentially contain data of the given types."""
@@ -54,6 +76,8 @@ def get_topics_to_read(selected_topics, bag):
         assert possible_gps_topics, "Can't find any GPS topic."
         selected_topics['gps']['topic'] = user_select_topic(
             possible_gps_topics, 'GPS') if len(possible_gps_topics) > 1 else possible_gps_topics[0]
+        if selected_topics['gps']['tc'] is None:
+            selected_topics['gps']['tc'] = ask_time_compensation()
     topics_to_read.append(selected_topics['gps']['topic'])
 
     # Points topic validation and selection
@@ -139,6 +163,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_folder', default="ros_datasets/extracted_data",
                         help='Root folder to save extracted data')
     parser.add_argument('--fps', type=float, default=4, help='Sampling interval for GPS data in seconds')
+    parser.add_argument('--gps_tc', type=float, default=None, help='Time compensation between GPS and other sensors')
 
 
     args = parser.parse_args()
@@ -150,7 +175,8 @@ if __name__ == '__main__':
             'is_polar': False
             },
         'gps': {
-            'topic': args.gps_topic
+            'topic': args.gps_topic,
+            'tc': args.gps_tc
         },
         'image': 
         {
@@ -225,7 +251,7 @@ if __name__ == '__main__':
 
                     elif topic == selected_topics['gps']['topic']:
                         gps_data.append(
-                            (t.to_sec(), np.array([msg.latitude, msg.longitude, msg.altitude])))
+                            (t.to_sec() - selected_topics['gps']['tc'], np.array([msg.latitude, msg.longitude, msg.altitude])))
                     elif topic == selected_topics['image']['topic']:
                         image_data.append((t.to_sec(), msg))
                     pbar.update(1)
@@ -251,6 +277,8 @@ if __name__ == '__main__':
         img_data = np.sort(img_data, order='timestamps')
 
 
+        if selected_topics['gps']['tc'] > 0:
+            rosbag_name = f"{rosbag_name}-tc{selected_topics['gps']['tc']}"
         csv_filename = join(args.save_folder, rosbag_name,
                             f"{rosbag_name}_gps.csv")
 
