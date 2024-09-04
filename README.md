@@ -5,17 +5,15 @@
   - [Requirements](#requirements)
   - [Setup](#setup)
   - [Usage](#usage)
-  - [Example](#example)
 
-This Python script is designed to process ROS bag files to extract GPS, point cloud, and image data, handling various topic types and allowing dynamic topic selection. It features an interactive mode to choose topics if not specified, and it can handle both compressed and uncompressed image data.
+This Python script is designed to process ROS bag files to extract GPS, point cloud, and image data, handling various topic types and allowing dynamic topic selection. It features an interactive mode to choose topics if not specified.
 
 ## Features
 
 - **Dynamic Topic Selection**: If the topics are not specified or are not present in the bag, the script will prompt the user to choose from available topics.
 - **Time Compensation**: Option to adjust GPS timestamps to match UTC, with custom compensation settings.
-- **Data Extraction**: Extracts and processes GPS data, point cloud data, and images from specified topics within ROS bag files.
-- **Data Saving**: Extracted data is saved to specified output directories, organized by dataset names derived from file names.
-- **Compression Handling**: Determines if image data is compressed and processes it accordingly.
+- **Data Extraction**: Extracts and processes GPS data, point cloud data, images and any msgtypes from specified topics within ROS bag files.
+- **Data Saving**: Extracted data is saved to specified output directories, organized by dataset names and topic names. Dataset names are derived from rosbags name.
 
 ## Requirements
 
@@ -34,31 +32,22 @@ This Python script is designed to process ROS bag files to extract GPS, point cl
 
 1. **Prepare Your Bag Files**: Place your .bag files in a directory or specify the path to each bag file directly.
 
-2. **Specify Topics (Optional)**: If known, you can specify the topics for GPS, point cloud, and image data via command-line arguments. If not specified, the script will allow you to select from available topics in each bag file.
+2. **Specify Topics (Optional)**: If known, you can specify the topics for GPS, point cloud, and image data via command-line arguments. If topics are not specified, the script will interactively prompt you to choose topics from each ROS bag file.
 
-3. **Run the Script**:
+1. **Run the Script**:
    Use the following command to run the script, replacing <your_bag_files> with your bag file paths:
 
    ```shell
-   python3 extract_ros_data.py --bags <your_bag_files> --save_folder <output_directory>
+   python3 ExtractRosbags.py --bags <your_bag_files> --save_folder <output_directory> --topics <topic_1> <topic_2>
    ```
 
    Here are the available arguments:
 
-   - --points_topic: Topic for point cloud data.
-   - --gps_topic: Topic for GPS data.
-   - --image_topic: Topic for image data.
    - --bags: List of bag files to process (required).
    - --save_folder: Root folder to save extracted data (default: ros_datasets/extracted_data).
+   - --base_topic: Base topic for other topics to sync, usually gps topic. (optional, if not specified, use the gps topic)
+   - --topics: List of sensors' topics to extract data from (optional, if not specified, would prompt later).
    - --fps: Frame rate to sample the GPS data (default: 4 frames per second).
    - --gps_tc: Time compensation in seconds to adjust GPS timestamps (optional).
 
-## Example
 
-To process files located in /path/to/bags and save the extracted data in /path/to/output, run:
-
-```shell
-python3 extract_ros_data.py --bags /path/to/bags/*.bag --save_folder /path/to/output
-```
-
-If topics are not specified, the script will interactively prompt you to choose topics from each ROS bag file. This process is repeated for each unique dataset identified by the bag filenames.

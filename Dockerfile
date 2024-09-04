@@ -21,6 +21,6 @@ RUN apt-get update && apt-get install -y \
     opencv-python \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pandas tqdm
+RUN pip install --no-cache-dir pandas tqdm rosnumpy
 
 CMD ["/bin/bash"]
