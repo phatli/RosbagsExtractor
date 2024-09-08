@@ -77,12 +77,17 @@ class RadarData(SensorData):
 
 
 class LidarData(SensorData):
-    def __init__(self, args):
+    def __init__(self, args, save_keys = ['x', 'y', 'z']):
         super().__init__(*args)
+        self.save_keys = save_keys
 
     def extract_data(self, msg, t):
         points = ros_numpy.point_cloud2.pointcloud2_to_array(msg)
-        self.data_lst.append((t.to_sec(), points))
+        flattened_points = np.zeros((points.shape[0] * points.shape[1], len(self.save_keys)))
+        for key in self.save_keys:
+            assert key in points.dtype.names, f"Key {key} not found in point cloud message"
+            flattened_points[:, self.save_keys.index(key)] = points[key].ravel()
+        self.data_lst.append((t.to_sec(), flattened_points))
 
     def save_data(self, timestamp):
         if self.data_np is None:
@@ -91,7 +96,7 @@ class LidarData(SensorData):
             pcl_msg = extract_msg(self.data_np, timestamp)
             save_npdata_to_files(
                 pcl_msg, "{:.6f}".format(timestamp).replace(
-                ".", ""), self.save_folder, self.rosbag_name, self.topic)
+                ".", ""), self.save_folder, self.rosbag_name, f"{self.topic}_{'-'.join(self.save_keys)}")
 
 
 class ImageData(SensorData):
